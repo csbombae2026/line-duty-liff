@@ -980,7 +980,12 @@ const data = {
       '✅ ส่งข้อมูลเรียบร้อยแล้ว',
       true
     );
-
+// รอให้ผู้ใช้เห็นข้อความสำเร็จสักครู่ แล้วปิดหน้าต่าง LINE
+if (liff.isInClient()) {
+  setTimeout(() => {
+    liff.closeWindow();
+  }, 1000);
+}
 
     document.getElementById(
       'dutyPoint'
