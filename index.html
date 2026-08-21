@@ -8,7 +8,7 @@
   <title>ระบบบันทึกเวรประจำวัน</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -571,7 +571,59 @@ function ensureEmptyImageSlot() {
     addImageSlot();
   }
 }
-function compressImage(file) {
+async function compressImage(file) {
+
+  let sourceFile = file;
+
+  const fileName =
+    file.name.toLowerCase();
+
+  const isHeic =
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    fileName.endsWith('.heic') ||
+    fileName.endsWith('.heif');
+
+
+  // ถ้าเป็น HEIC/HEIF ให้แปลงเป็น JPEG ก่อน
+  if (isHeic) {
+
+    try {
+
+      const convertedBlob =
+        await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.85
+        });
+
+      const blob =
+        Array.isArray(convertedBlob)
+          ? convertedBlob[0]
+          : convertedBlob;
+
+      sourceFile =
+        new File(
+          [blob],
+          file.name.replace(
+            /\.(heic|heif)$/i,
+            '.jpg'
+          ),
+          {
+            type: 'image/jpeg'
+          }
+        );
+
+    } catch (error) {
+
+      throw new Error(
+        'ไม่สามารถแปลงไฟล์ HEIC ได้ กรุณาเลือกรูป JPG หรือ PNG'
+      );
+
+    }
+
+  }
+
 
   return new Promise(
     function(resolve, reject) {
@@ -579,11 +631,13 @@ function compressImage(file) {
       const reader =
         new FileReader();
 
+
       reader.onload =
         function(event) {
 
           const img =
             new Image();
+
 
           img.onload =
             function() {
@@ -627,6 +681,7 @@ function compressImage(file) {
                     MAX_SIZE;
 
                 }
+
               }
 
 
@@ -663,7 +718,8 @@ function compressImage(file) {
 
 
               resolve({
-                name: file.name,
+                name:
+                  sourceFile.name,
                 data: data
               });
 
@@ -671,7 +727,16 @@ function compressImage(file) {
 
 
           img.onerror =
-            reject;
+            function() {
+
+              reject(
+                new Error(
+                  'ไม่สามารถอ่านรูปภาพ ' +
+                  sourceFile.name
+                )
+              );
+
+            };
 
 
           img.src =
@@ -681,13 +746,24 @@ function compressImage(file) {
 
 
       reader.onerror =
-        reject;
+        function() {
+
+          reject(
+            new Error(
+              'ไม่สามารถอ่านไฟล์รูปภาพได้'
+            )
+          );
+
+        };
 
 
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(
+        sourceFile
+      );
 
     }
   );
+
 }
   
 async function saveDuty() {
@@ -789,12 +865,36 @@ document
 
 const images = [];
 
-for (const file of imageFiles) {
+try {
 
-  const image =
-    await compressImage(file);
+  for (const file of imageFiles) {
 
-  images.push(image);
+    button.textContent =
+      '⏳ กำลังเตรียมรูป ' +
+      (images.length + 1) +
+      '/' +
+      imageFiles.length;
+
+    const image =
+      await compressImage(file);
+
+    images.push(image);
+
+  }
+
+} catch (error) {
+
+  button.disabled = false;
+
+  button.textContent =
+    '✅ บันทึกเวลาปฏิบัติหน้าที่';
+
+  showMessage(
+    '❌ ' + error.message,
+    false
+  );
+
+  return;
 }
 
 
