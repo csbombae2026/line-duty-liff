@@ -163,6 +163,35 @@
       background: #ffe8e8;
       color: #b00000;
     }
+    .image-item {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.image-item input {
+  width: 100%;
+}
+
+.image-preview {
+  display: none;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  margin-top: 10px;
+  border-radius: 10px;
+}
+
+.remove-image {
+  display: none;
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  background: #ef4444;
+  font-size: 14px;
+}
   </style>
 </head>
 
@@ -239,6 +268,14 @@
         <option value="อาคารเรียน">
           อาคารเรียน
         </option>
+     
+        <option value="ประตูหลัง 3">
+          ประตูหลัง 3
+        </option>
+
+        <option value="ห้องน้ำชาย">
+          ห้องน้ำชาย
+        </option>
 
         <option value="อื่น ๆ">
           อื่น ๆ
@@ -284,7 +321,16 @@
         id="note"
         placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)">
       </textarea>
+     
+      <label class="title">
+        📷 รูปภาพประกอบ
+      </label>
 
+      <div id="imageInputs"></div>
+
+      <div class="small">
+        สามารถเพิ่มได้สูงสุด 6 รูป
+      </div>
 
       <button
         id="saveButton"
@@ -388,8 +434,262 @@ async function init() {
 
 }
 
+const MAX_IMAGES = 6;
 
 
+/*
+ * สร้างช่องเลือกรูป
+ */
+function addImageSlot() {
+
+  const container =
+    document.getElementById('imageInputs');
+
+  const current =
+    container.querySelectorAll('.image-item');
+
+  if (current.length >= MAX_IMAGES) {
+    return;
+  }
+
+  const item =
+    document.createElement('div');
+
+  item.className =
+    'image-item';
+
+  item.innerHTML = `
+    <input
+      type="file"
+      accept="image/*"
+      onchange="imageSelected(this)">
+
+    <img
+      class="image-preview">
+
+    <button
+      type="button"
+      class="remove-image"
+      onclick="removeImage(this)">
+      🗑️ ลบรูปนี้
+    </button>
+  `;
+
+  container.appendChild(item);
+}
+
+
+/*
+ * เมื่อเลือกรูป
+ */
+function imageSelected(input) {
+
+  const file =
+    input.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  const item =
+    input.closest('.image-item');
+
+  const preview =
+    item.querySelector('.image-preview');
+
+  const removeButton =
+    item.querySelector('.remove-image');
+
+
+  preview.src =
+    URL.createObjectURL(file);
+
+  preview.style.display =
+    'block';
+
+  removeButton.style.display =
+    'block';
+
+
+  /*
+   * ถ้าเลือกช่องสุดท้ายแล้ว
+   * สร้างช่องใหม่ให้อัตโนมัติ
+   */
+  const container =
+    document.getElementById('imageInputs');
+
+  const items =
+    container.querySelectorAll('.image-item');
+
+  if (
+    item === items[items.length - 1] &&
+    items.length < MAX_IMAGES
+  ) {
+    addImageSlot();
+  }
+}
+
+
+/*
+ * ลบรูป
+ */
+function removeImage(button) {
+
+  const item =
+    button.closest('.image-item');
+
+  item.remove();
+
+  ensureEmptyImageSlot();
+}
+
+
+/*
+ * ตรวจว่าต้องมีช่องว่างอย่างน้อย 1 ช่อง
+ */
+function ensureEmptyImageSlot() {
+
+  const container =
+    document.getElementById('imageInputs');
+
+  const items =
+    container.querySelectorAll('.image-item');
+
+  if (items.length === 0) {
+    addImageSlot();
+    return;
+  }
+
+  const lastInput =
+    items[items.length - 1]
+      .querySelector('input');
+
+  if (
+    lastInput.files.length > 0 &&
+    items.length < MAX_IMAGES
+  ) {
+    addImageSlot();
+  }
+}
+function compressImage(file) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        function(event) {
+
+          const img =
+            new Image();
+
+          img.onload =
+            function() {
+
+              const MAX_SIZE = 1280;
+
+              let width =
+                img.width;
+
+              let height =
+                img.height;
+
+
+              if (
+                width > MAX_SIZE ||
+                height > MAX_SIZE
+              ) {
+
+                if (width > height) {
+
+                  height =
+                    Math.round(
+                      height *
+                      MAX_SIZE /
+                      width
+                    );
+
+                  width =
+                    MAX_SIZE;
+
+                } else {
+
+                  width =
+                    Math.round(
+                      width *
+                      MAX_SIZE /
+                      height
+                    );
+
+                  height =
+                    MAX_SIZE;
+
+                }
+              }
+
+
+              const canvas =
+                document.createElement(
+                  'canvas'
+                );
+
+              canvas.width =
+                width;
+
+              canvas.height =
+                height;
+
+
+              const ctx =
+                canvas.getContext('2d');
+
+
+              ctx.drawImage(
+                img,
+                0,
+                0,
+                width,
+                height
+              );
+
+
+              const data =
+                canvas.toDataURL(
+                  'image/jpeg',
+                  0.75
+                );
+
+
+              resolve({
+                name: file.name,
+                data: data
+              });
+
+            };
+
+
+          img.onerror =
+            reject;
+
+
+          img.src =
+            event.target.result;
+
+        };
+
+
+      reader.onerror =
+        reject;
+
+
+      reader.readAsDataURL(file);
+
+    }
+  );
+}
+  
 async function saveDuty() {
 
   const dutyPoint =
@@ -470,18 +770,47 @@ async function saveDuty() {
     '⏳ กำลังบันทึก...';
 
 
-  const data = {
+ const imageFiles = [];
 
-    idToken: idToken,
+document
+  .querySelectorAll(
+    '#imageInputs input[type="file"]'
+  )
+  .forEach(function(input) {
 
-    dutyPoint: dutyPoint,
+    if (input.files.length > 0) {
+      imageFiles.push(
+        input.files[0]
+      );
+    }
 
-    status: status.value,
+  });
 
-    note: note
 
-  };
+const images = [];
 
+for (const file of imageFiles) {
+
+  const image =
+    await compressImage(file);
+
+  images.push(image);
+}
+
+
+const data = {
+
+  idToken: idToken,
+
+  dutyPoint: dutyPoint,
+
+  status: status.value,
+
+  note: note,
+
+  images: images
+
+};
 
   try {
 
@@ -609,7 +938,7 @@ setInterval(
   updateClock,
   1000
 );
-
+addImageSlot();
 
 init();
 
