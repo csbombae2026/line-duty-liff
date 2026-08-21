@@ -482,10 +482,9 @@ function addImageSlot() {
 /*
  * เมื่อเลือกรูป
  */
-function imageSelected(input) {
+async function imageSelected(input) {
 
-  const file =
-    input.files[0];
+  const file = input.files[0];
 
   if (!file) {
     return;
@@ -500,21 +499,62 @@ function imageSelected(input) {
   const removeButton =
     item.querySelector('.remove-image');
 
+  const fileName =
+    file.name.toLowerCase();
 
-  preview.src =
-    URL.createObjectURL(file);
+  const isHeic =
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    fileName.endsWith('.heic') ||
+    fileName.endsWith('.heif');
 
-  preview.style.display =
-    'block';
+  try {
 
-  removeButton.style.display =
-    'block';
+    preview.style.display = 'none';
 
+    if (isHeic) {
 
-  /*
-   * ถ้าเลือกช่องสุดท้ายแล้ว
-   * สร้างช่องใหม่ให้อัตโนมัติ
-   */
+      if (typeof heic2any === 'undefined') {
+        throw new Error('ไม่พบตัวแปลงไฟล์ HEIC');
+      }
+
+      const converted =
+        await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.75
+        });
+
+      const blob =
+        Array.isArray(converted)
+          ? converted[0]
+          : converted;
+
+      preview.src =
+        URL.createObjectURL(blob);
+
+    } else {
+
+      preview.src =
+        URL.createObjectURL(file);
+
+    }
+
+    preview.style.display = 'block';
+    removeButton.style.display = 'block';
+
+  } catch (error) {
+
+    console.error(error);
+
+    preview.style.display = 'none';
+
+    showMessage(
+      'ไม่สามารถอ่านรูป ' + file.name,
+      false
+    );
+  }
+
   const container =
     document.getElementById('imageInputs');
 
