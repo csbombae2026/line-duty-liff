@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ระบบบันทึกเวร</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7f8;
+      text-align: center;
+      padding: 30px 15px;
+    }
+
+    .card {
+      max-width: 400px;
+      margin: auto;
+      padding: 25px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    img {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    h1 {
+      color: #06c755;
+    }
+
+    #status {
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+
+    <h1>👩‍🏫 ระบบบันทึกเวร</h1>
+
+    <div id="status">
+      กำลังเชื่อมต่อ LINE...
+    </div>
+
+    <div id="profile" style="display:none;">
+
+      <img id="picture">
+
+      <h2 id="name"></h2>
+
+      <p>เชื่อมต่อ LINE สำเร็จ ✅</p>
+
+    </div>
+
+  </div>
+
+
+<script>
+
+const LIFF_ID = '2011190111-3HrsRPRO';
+
+async function main() {
+
+  try {
+
+    await liff.init({
+      liffId: LIFF_ID
+    });
+
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    const profile = await liff.getProfile();
+
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('profile').style.display = 'block';
+
+    document.getElementById('name').textContent =
+      profile.displayName;
+
+    if (profile.pictureUrl) {
+      document.getElementById('picture').src =
+        profile.pictureUrl;
+    }
+
+  } catch (error) {
+
+    document.getElementById('status').innerHTML =
+      '❌ เกิดข้อผิดพลาด<br>' + error.message;
+
+  }
+
+}
+
+main();
+
+</script>
+
+</body>
+</html>
