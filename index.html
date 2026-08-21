@@ -2,74 +2,325 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-  <title>ระบบบันทึกเวร</title>
+  <title>ระบบบันทึกเวรประจำวัน</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f7f8;
+      margin: 0;
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      background: #f4f6f8;
+      color: #333;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: auto;
+      padding: 18px;
+    }
+
+    .header {
       text-align: center;
-      padding: 30px 15px;
+      margin-bottom: 15px;
+    }
+
+    .header h1 {
+      margin-bottom: 5px;
+      color: #06c755;
+      font-size: 26px;
+    }
+
+    .header p {
+      margin-top: 0;
+      color: #777;
     }
 
     .card {
-      max-width: 400px;
-      margin: auto;
-      padding: 25px;
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.07);
     }
 
-    img {
-      width: 90px;
-      height: 90px;
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .profile img {
+      width: 65px;
+      height: 65px;
       border-radius: 50%;
       object-fit: cover;
+      background: #eee;
     }
 
-    h1 {
-      color: #06c755;
+    .profile-name {
+      font-size: 20px;
+      font-weight: bold;
     }
 
-    #status {
-      margin-top: 25px;
+    .small {
+      color: #888;
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    .datetime {
+      margin-top: 15px;
+      padding: 10px;
+      text-align: center;
+      border-radius: 10px;
+      background: #f4f6f8;
+    }
+
+    label.title {
+      display: block;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    select,
+    textarea {
+      width: 100%;
+      padding: 13px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .status-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+
+    .status-item input {
+      width: 19px;
+      height: 19px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background: #06c755;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      background: #aaa;
+    }
+
+    #loading {
+      text-align: center;
+      padding: 40px 10px;
+    }
+
+    #main {
+      display: none;
+    }
+
+    #message {
+      display: none;
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .success {
+      background: #e7f8ed;
+      color: #087d35;
+    }
+
+    .error {
+      background: #ffe8e8;
+      color: #b00000;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="card">
+<div class="container">
 
-    <h1>👩‍🏫 ระบบบันทึกเวร</h1>
+  <div class="header">
+    <h1>👩‍🏫 บันทึกเวรประจำวัน</h1>
+    <p>ระบบบันทึกเวลาการปฏิบัติหน้าที่</p>
+  </div>
 
-    <div id="status">
-      กำลังเชื่อมต่อ LINE...
+  <div id="loading">
+    กำลังเชื่อมต่อ LINE...
+  </div>
+
+  <div id="main">
+
+    <div class="card">
+
+      <div class="profile">
+
+        <img id="picture">
+
+        <div>
+          <div
+            class="profile-name"
+            id="displayName">
+          </div>
+
+          <div class="small">
+            ผู้ปฏิบัติหน้าที่เวร
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        class="datetime"
+        id="currentDateTime">
+      </div>
+
     </div>
 
-    <div id="profile" style="display:none;">
 
-      <img id="picture">
+    <div class="card">
 
-      <h2 id="name"></h2>
+      <label class="title">
+        📍 จุดปฏิบัติหน้าที่
+      </label>
 
-      <p>เชื่อมต่อ LINE สำเร็จ ✅</p>
+      <select id="dutyPoint">
+
+        <option value="">
+          -- เลือกจุดปฏิบัติหน้าที่ --
+        </option>
+
+        <option value="ประตูหน้าโรงเรียน">
+          ประตูหน้าโรงเรียน
+        </option>
+
+        <option value="ประตูหลังโรงเรียน">
+          ประตูหลังโรงเรียน
+        </option>
+
+        <option value="โรงอาหาร">
+          โรงอาหาร
+        </option>
+
+        <option value="หน้าเสาธง">
+          หน้าเสาธง
+        </option>
+
+        <option value="อาคารเรียน">
+          อาคารเรียน
+        </option>
+
+        <option value="อื่น ๆ">
+          อื่น ๆ
+        </option>
+
+      </select>
+
+
+      <label class="title">
+        ✅ สถานะ
+      </label>
+
+      <label class="status-item">
+        <input
+          type="radio"
+          name="status"
+          value="ปฏิบัติหน้าที่">
+        ปฏิบัติหน้าที่
+      </label>
+
+      <label class="status-item">
+        <input
+          type="radio"
+          name="status"
+          value="มาสาย">
+        มาสาย
+      </label>
+
+      <label class="status-item">
+        <input
+          type="radio"
+          name="status"
+          value="ติดภารกิจ">
+        ติดภารกิจ
+      </label>
+
+
+      <label class="title">
+        📝 หมายเหตุ
+      </label>
+
+      <textarea
+        id="note"
+        placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)">
+      </textarea>
+
+
+      <button
+        id="saveButton"
+        onclick="saveDuty()">
+
+        ✅ บันทึกเวลาปฏิบัติหน้าที่
+
+      </button>
+
+
+      <div id="message"></div>
 
     </div>
 
   </div>
+
+</div>
 
 
 <script>
 
 const LIFF_ID = '2011190111-3HrsRPRO';
 
-async function main() {
+/*
+ * สำคัญ
+ * ให้นำ Web App URL ของ Apps Script
+ * ที่ลงท้าย /exec มาใส่ตรงนี้
+ */
+const BACKEND_URL =
+  'https://script.google.com/macros/s/AKfycbwAMZfeZP9zlB-SvMq370bKq5B9NBjaec1orEoDfKusR_dYaO3N6DFwBDsWV8g_a0Wd/exec';
+
+
+let idToken = null;
+
+
+async function init() {
 
   try {
 
@@ -77,34 +328,290 @@ async function main() {
       liffId: LIFF_ID
     });
 
+
     if (!liff.isLoggedIn()) {
+
       liff.login();
       return;
+
     }
 
-    const profile = await liff.getProfile();
 
-    document.getElementById('status').style.display = 'none';
-    document.getElementById('profile').style.display = 'block';
+    idToken = liff.getIDToken();
 
-    document.getElementById('name').textContent =
+
+    if (!idToken) {
+      throw new Error('ไม่พบ LINE ID Token');
+    }
+
+
+    const profile =
+      await liff.getProfile();
+
+
+    document.getElementById(
+      'displayName'
+    ).textContent =
       profile.displayName;
 
+
     if (profile.pictureUrl) {
-      document.getElementById('picture').src =
+
+      document.getElementById(
+        'picture'
+      ).src =
         profile.pictureUrl;
+
     }
+
+
+    document.getElementById(
+      'loading'
+    ).style.display =
+      'none';
+
+
+    document.getElementById(
+      'main'
+    ).style.display =
+      'block';
+
 
   } catch (error) {
 
-    document.getElementById('status').innerHTML =
-      '❌ เกิดข้อผิดพลาด<br>' + error.message;
+    document.getElementById(
+      'loading'
+    ).innerHTML =
+      '❌ ' + error.message;
 
   }
 
 }
 
-main();
+
+
+async function saveDuty() {
+
+  const dutyPoint =
+    document.getElementById(
+      'dutyPoint'
+    ).value;
+
+
+  const status =
+    document.querySelector(
+      'input[name="status"]:checked'
+    );
+
+
+  const note =
+    document.getElementById(
+      'note'
+    ).value.trim();
+
+
+  if (!dutyPoint) {
+
+    showMessage(
+      'กรุณาเลือกจุดปฏิบัติหน้าที่',
+      false
+    );
+
+    return;
+  }
+
+
+  if (!status) {
+
+    showMessage(
+      'กรุณาเลือกสถานะ',
+      false
+    );
+
+    return;
+  }
+
+
+  if (!idToken) {
+
+    showMessage(
+      'ไม่พบข้อมูลยืนยันตัวตน LINE',
+      false
+    );
+
+    return;
+  }
+
+
+  if (
+    BACKEND_URL.includes(
+      'ใส่_URL'
+    )
+  ) {
+
+    showMessage(
+      'ยังไม่ได้ตั้งค่า Apps Script URL',
+      false
+    );
+
+    return;
+  }
+
+
+  const button =
+    document.getElementById(
+      'saveButton'
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    '⏳ กำลังบันทึก...';
+
+
+  const data = {
+
+    idToken: idToken,
+
+    dutyPoint: dutyPoint,
+
+    status: status.value,
+
+    note: note
+
+  };
+
+
+  try {
+
+    /*
+     * ใช้ no-cors เพราะ GitHub Pages
+     * และ Apps Script เป็นคนละโดเมน
+     */
+    await fetch(
+      BACKEND_URL,
+      {
+        method: 'POST',
+
+        mode: 'no-cors',
+
+        headers: {
+          'Content-Type':
+            'text/plain;charset=utf-8'
+        },
+
+        body:
+          JSON.stringify(data)
+      }
+    );
+
+
+    showMessage(
+      '✅ ส่งข้อมูลเรียบร้อยแล้ว',
+      true
+    );
+
+
+    document.getElementById(
+      'dutyPoint'
+    ).value = '';
+
+
+    document.querySelectorAll(
+      'input[name="status"]'
+    ).forEach(
+      item => item.checked = false
+    );
+
+
+    document.getElementById(
+      'note'
+    ).value = '';
+
+
+  } catch (error) {
+
+    showMessage(
+      '❌ ไม่สามารถส่งข้อมูลได้',
+      false
+    );
+
+  }
+
+
+  button.disabled = false;
+
+  button.textContent =
+    '✅ บันทึกเวลาปฏิบัติหน้าที่';
+
+}
+
+
+
+function showMessage(
+  message,
+  success
+) {
+
+  const box =
+    document.getElementById(
+      'message'
+    );
+
+
+  box.style.display =
+    'block';
+
+
+  box.className =
+    success
+      ? 'success'
+      : 'error';
+
+
+  box.textContent =
+    message;
+
+}
+
+
+
+function updateClock() {
+
+  const now =
+    new Date();
+
+
+  document.getElementById(
+    'currentDateTime'
+  ).textContent =
+
+    now.toLocaleDateString(
+      'th-TH',
+      {
+        dateStyle: 'full'
+      }
+    )
+
+    + ' เวลา '
+
+    + now.toLocaleTimeString(
+      'th-TH'
+    );
+
+}
+
+
+updateClock();
+
+setInterval(
+  updateClock,
+  1000
+);
+
+
+init();
 
 </script>
 
